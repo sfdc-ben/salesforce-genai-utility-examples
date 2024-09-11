@@ -28,7 +28,16 @@ export default class ServiceRepliesBYOLLM extends LightningElement {
 	@api summaryPromptId
 	@api refinementPromptId
 
+	inclusionList = ['order', 'delivery']
+
 	// GETTERS / SETTERS
+	get genReply() {
+		return this.generatedReply.response.length === 0
+	}
+
+	get replyDisabled() {
+		return this.generatedReply.response.length !== 0 || this.generating === true
+	}
 
 	// LIFECYCLE FUNCTIONS
 	connectedCallback() {
@@ -40,6 +49,9 @@ export default class ServiceRepliesBYOLLM extends LightningElement {
 
 	handleMessage(message) {
 		this.unansweredMessages.push(message)
+		if (message.split(' ').length >= 5 || message.includes(this.inclusionList.some((v) => message.includes(v)))) {
+			this.handleGenerateReply({ target: { value: 'Context' } })
+		}
 	}
 
 	handleGenerateReply(event) {

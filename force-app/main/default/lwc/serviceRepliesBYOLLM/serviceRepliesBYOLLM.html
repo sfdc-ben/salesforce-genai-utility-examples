@@ -11,6 +11,55 @@
 				</span>
 			</div>
 		</div>
-		<div class="slds-var-p-around_medium slds-is-relative">Insert Content Here</div>
+		<div class="slds-var-p-around_medium slds-is-relative">
+			<h3 class="slds-text-title_caps slds-var-p-horizontal_medium">Generative Reply</h3>
+			<template if:true={genReply}>
+				<template if:false={generating}><div class="slds-var-p-horizontal_medium slds-var-p-top_x-small slds-text-title">No generative reply created</div></template>
+				<template if:true={generating}>
+					<div class="slds-var-p-vertical_small"><lightning-spinner size="small" alternative-text="Loading"></lightning-spinner></div>
+				</template>
+			</template>
+			<template if:false={genReply}>
+				<template if:true={generating}>
+					<div class="slds-var-p-vertical_small"><lightning-spinner size="small" alternative-text="Loading"></lightning-spinner></div>
+				</template>
+				<section role="log" class="slds-chat slds-var-p-horizontal_xx-small">
+					<ul class="slds-chat-list">
+						<li class="slds-chat-listitem slds-chat-listitem_outbound">
+							<div class="slds-chat-message">
+								<div class="slds-chat-message__body">
+									<div class="slds-chat-message__text slds-chat-message__text_outbound">
+										<span>{generatedReply.response} </span>
+									</div>
+									<div class="slds-chat-message__meta" aria-label="Prompt Time">Prompt Time: {generatedReply.time} seconds</div>
+								</div>
+							</div>
+						</li>
+					</ul>
+				</section>
+				<div class="slds-var-p-horizontal_medium">
+					<div><span>Source:</span><lightning-badge label={generatedReply.source} class="slds-badge_lightest slds-var-m-left_xx-small"></lightning-badge></div>
+					<lightning-conversation-toolkit-api lwc:ref="lwcToolKitApi"> </lightning-conversation-toolkit-api>
+					<lightning-button-group class="slds-var-m-vertical_x-small">
+						<lightning-button label="Send" onclick={handleSendReply}></lightning-button>
+						<lightning-button label="Edit" onclick={handleSetInput}></lightning-button>
+					</lightning-button-group>
+				</div>
+			</template>
+		</div>
+		<div class="slds-border_top slds-var-p-horizontal_medium">
+			<div class="slds-grid slds-grid_vertical">
+				<template if:true={contextPromptId}>
+					<div class="slds-col slds-var-p-bottom_x-small">
+						<lightning-button disabled={replyDisabled} variant="brand" stretch label="Generate Reply" onclick={handleGenerateReply} value="Context"></lightning-button>
+					</div>
+				</template>
+				<template if:true={summaryPromptId}>
+					<div class="slds-col slds-var-p-bottom_x-small">
+						<lightning-button stretch variant="brand" label="Generate Summary Reply" onclick={handleGenerateReply} value="Summary"></lightning-button>
+					</div>
+				</template>
+			</div>
+		</div>
 	</div>
 </template>
