@@ -1,16 +1,30 @@
 import { LightningElement, wire, track, api } from 'lwc'
 import { subscribe, APPLICATION_SCOPE, MessageContext } from 'lightning/messageService'
+import { getRecord, getFieldValue, updateRecord } from 'lightning/uiRecordApi'
 import ConversationEndUserChannel from '@salesforce/messageChannel/lightning__conversationEndUserMessage'
 import ConversationAgentSendChannel from '@salesforce/messageChannel/lightning__conversationAgentSend'
 import resolvePrompt from '@salesforce/apex/PromptResolutionTemplateController.resolvePrompt'
+import AI_GEN from '@salesforce/schema/MessagingSession.AI_Responses_Generated__c'
+import AI_USED from '@salesforce/schema/MessagingSession.AI_Responses_Used__c'
+import MS_ID from '@salesforce/schema/MessagingSession.Id'
 
 export default class ServiceRepliesBYOLLM extends LightningElement {
 	// VARIABLES
 	subscriptionUser = null
 	subscriptionAgent = null
 
+	@api recordId
+	@api contextPromptId
+	@api summaryPromptId
+	@api refinementPromptId
+
 	@wire(MessageContext) messageContextUser
 	@wire(MessageContext) messageContextAgent
+	@wire(getRecord, {
+		recordId: '$recordId',
+		fields: [AI_GEN, AI_USED]
+	})
+	session
 
 	@track unansweredMessages = []
 	@track showRefine = false
@@ -23,10 +37,13 @@ export default class ServiceRepliesBYOLLM extends LightningElement {
 		time: 0
 	}
 
-	@api recordId
-	@api contextPromptId
-	@api summaryPromptId
-	@api refinementPromptId
+	get AIResponsesGenerated() {
+		return getFieldValue(this.session.data, AI_GEN)
+	}
+
+	get AIResponsesUsed() {
+		return getFieldValue(this.session.data, AI_USED)
+	}
 
 	inclusionList = ['order', 'delivery']
 
@@ -48,8 +65,8 @@ export default class ServiceRepliesBYOLLM extends LightningElement {
 	// EVENT HANDLERS
 
 	handleMessage(message) {
-		this.unansweredMessages.push(message)
-		if (message.split(' ').length >= 5 || message.includes(this.inclusionList.some((v) => message.includes(v)))) {
+		this.unansweredMessages.push(message.content)
+		if (message.content.split(' ').length >= 5 || message.content.includes(this.inclusionList.some((v) => message.content.includes(v)))) {
 			this.handleGenerateReply({ target: { value: 'Context' } })
 		}
 	}
@@ -120,6 +137,7 @@ export default class ServiceRepliesBYOLLM extends LightningElement {
 	async handleSetInput() {
 		const toolKit = this.refs.lwcToolKitApi
 		await toolKit.setAgentInput(this.recordId, { text: this.generatedReply.response })
+		this.updateAICounts('Used')
 	}
 
 	async handleSendReply() {
@@ -160,6 +178,7 @@ export default class ServiceRepliesBYOLLM extends LightningElement {
 					time: (((end - start) % 60000) / 1000).toFixed(2)
 				}
 				this.generating = false
+				this.updateAICounts('Generated')
 			})
 			.catch((error) => {
 				console.log('error', error)
@@ -173,13 +192,27 @@ export default class ServiceRepliesBYOLLM extends LightningElement {
 		} else {
 			this.unansweredMessages.forEach((msg) => {
 				const regex = /[!.?](?:\s+)?$(?<=)/gm
-				let lastDigit = msg.content.charAt(msg.length - 1)
+				let lastDigit = msg.charAt(msg.length - 1)
 				if (!regex.test(lastDigit)) {
-					msg.content += '. '
+					msg += '. '
 				}
-				unifiedMsgs += msg.content
+				unifiedMsgs += msg
 			})
 		}
 		return unifiedMsgs
+	}
+
+	updateAICounts(source) {
+		const fields = {}
+		fields[MS_ID.fieldApiName] = this.recordId
+		if (source === 'Generated') {
+			let newVal = this.AIResponsesGenerated + 1
+			fields[AI_GEN.fieldApiName] = newVal
+		} else if (source === 'Used') {
+			let newVal = this.AIResponsesUsed + 1
+			fields[AI_GEN.fieldApiName] = newVal
+		}
+		const recordInput = { fields }
+		updateRecord(recordInput)
 	}
 }

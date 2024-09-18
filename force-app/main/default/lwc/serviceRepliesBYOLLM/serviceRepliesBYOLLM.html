@@ -41,7 +41,7 @@
 					<div><span>Source:</span><lightning-badge label={generatedReply.source} class="slds-badge_lightest slds-var-m-left_xx-small"></lightning-badge></div>
 					<lightning-conversation-toolkit-api lwc:ref="lwcToolKitApi"> </lightning-conversation-toolkit-api>
 					<lightning-button-group class="slds-var-m-vertical_x-small">
-						<lightning-button label="Send" onclick={handleSendReply}></lightning-button>
+						<!-- <lightning-button label="Send" onclick={handleSendReply}></lightning-button> -->
 						<lightning-button label="Edit" onclick={handleSetInput}></lightning-button>
 					</lightning-button-group>
 				</div>
@@ -59,6 +59,10 @@
 						<lightning-button stretch variant="brand" label="Generate Summary Reply" onclick={handleGenerateReply} value="Summary"></lightning-button>
 					</div>
 				</template>
+				<!-- Can Delete This -->
+				<div>Responses Generated: {AIResponsesGenerated}</div>
+				<div>Responses Used: {AIResponsesUsed}</div>
+				<!-- To Here -->
 			</div>
 		</div>
 	</div>
